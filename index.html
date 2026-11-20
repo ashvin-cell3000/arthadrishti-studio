@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>अर्थदृष्टी — Smart Wealth, EMI &amp; Budget Studio</title>
+  <meta name="theme-color" content="#090e17">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="अर्थदृष्टी">
+  <link id="pwa-icon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%23090e17'/%3E%3Ccircle cx='96' cy='96' r='64' fill='none' stroke='%2310b981' stroke-width='12'/%3E%3Ctext x='96' y='118' font-size='76' text-anchor='middle' fill='%2310b981' font-family='sans-serif'%3E%E2%82%B9%3C/text%3E%3C/svg%3E">
+  <link id="pwa-apple-icon" rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%23090e17'/%3E%3Ccircle cx='96' cy='96' r='64' fill='none' stroke='%2310b981' stroke-width='12'/%3E%3Ctext x='96' y='118' font-size='76' text-anchor='middle' fill='%2310b981' font-family='sans-serif'%3E%E2%82%B9%3C/text%3E%3C/svg%3E">
+  <link id="pwa-manifest" rel="manifest" href="">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --spring: cubic-bezier(0.22, 1, 0.36, 1); }
+    body {
+      font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+      background: radial-gradient(circle at 80% 10%, #0f2922 0%, #090e17 55%, #05070c 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glass {
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+      transition: transform 0.3s var(--spring), border-color 0.25s ease;
+    }
+    .glass:hover { border-color: rgba(16, 185, 129, 0.4); }
+    .btn-spring { transition: transform 0.25s var(--spring), background-color 0.2s ease; }
+    .btn-spring:hover { transform: translateY(-1px); }
+    .btn-spring:active { transform: scale(0.97); }
+    .panel-anim { animation: slideIn 0.32s var(--spring) forwards; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    input[type="range"] { accent-color: #10b981; }
+  </style>
+</head>
+<body class="antialiased selection:bg-emerald-500/30">
+  <canvas id="bg-canvas"></canvas>
+
+  <div class="relative z-10 max-w-5xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div>
+        <div class="flex items-center gap-2.5">
+          <span class="inline-flex h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_12px_#10b981]"></span>
+          <h1 id="app-title" class="text-xl sm:text-2xl font-bold text-white tracking-tight">अर्थदृष्टी स्टुडिओ</h1>
+        </div>
+        <p id="app-sub" class="text-sm text-slate-400 mt-0.5">SIP गुंतवणूक, कर्ज EMI आणि मासिक बजेट सिम्युलेटर</p>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <button id="btn-install" type="button" class="btn-spring px-3 py-1.5 rounded-xl text-xs font-medium bg-sky-500/15 text-sky-300 border border-sky-500/30 hover:bg-sky-500/25">
+          अ‍ॅप इन्स्टॉल करा
+        </button>
+        <button id="btn-speak" type="button" class="btn-spring px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25">
+          सारांश ऐका
+        </button>
+        <button id="btn-export" type="button" class="btn-spring px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/80 text-slate-200 border border-slate-700 hover:border-emerald-400/40">
+          CSV एक्सपोर्ट
+        </button>
+        <div class="inline-flex rounded-xl bg-slate-900/90 p-1 border border-slate-800">
+          <button id="lang-mr" type="button" class="btn-spring px-3 py-1 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">मराठी</button>
+          <button id="lang-en" type="button" class="btn-spring px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200">English</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <nav class="flex items-center gap-2 mb-6 overflow-x-auto pb-1" role="tablist">
+      <button id="tab-sip" type="button" class="btn-spring px-4 py-2 rounded-xl text-sm font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 whitespace-nowrap">SIP संपत्ती वाढ</button>
+      <button id="tab-emi" type="button" class="btn-spring px-4 py-2 rounded-xl text-sm font-medium bg-slate-900/70 text-slate-400 border border-slate-800 hover:text-slate-200 whitespace-nowrap">कर्ज EMI हिशोब</button>
+      <button id="tab-budget" type="button" class="btn-spring px-4 py-2 rounded-xl text-sm font-medium bg-slate-900/70 text-slate-400 border border-slate-800 hover:text-slate-200 whitespace-nowrap">मासिक बजेट</button>
+    </nav>
+
+    <!-- Panel 1: SIP -->
+    <section id="panel-sip" class="panel-anim space-y-5">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="glass rounded-2xl p-4">
+          <div id="lbl-sip-inv" class="text-xs text-slate-400">एकूण गुंतवणूक</div>
+          <div id="val-sip-inv" class="text-2xl font-bold text-white mt-1 tabular-nums">₹12,00,000</div>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div id="lbl-sip-gain" class="text-xs text-slate-400">अंदाजित नफा</div>
+          <div id="val-sip-gain" class="text-2xl font-bold text-emerald-300 mt-1 tabular-nums">₹11,23,391</div>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div id="lbl-sip-total" class="text-xs text-slate-400">एकूण रक्कम (महागाईसह / शिवाय)</div>
+          <div id="val-sip-total" class="text-2xl font-bold text-amber-300 mt-1 tabular-nums">₹23,23,391</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="glass rounded-3xl p-5 lg:col-span-5 space-y-4">
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <span id="lbl-sip-monthly" class="text-slate-300">मासिक SIP (₹)</span>
+              <span id="disp-sip-monthly" class="font-semibold text-emerald-300 tabular-nums">₹10,000</span>
+            </div>
+            <input id="in-sip-monthly" type="range" min="1000" max="100000" step="1000" value="10000" class="w-full cursor-pointer">
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <span id="lbl-sip-rate" class="text-slate-300">वार्षिक परतावा (%)</span>
+              <span id="disp-sip-rate" class="font-semibold text-emerald-300 tabular-nums">12%</span>
+            </div>
+            <input id="in-sip-rate" type="range" min="5" max="24" step="0.5" value="12" class="w-full cursor-pointer">
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <span id="lbl-sip-years" class="text-slate-300">कालावधी (वर्षे)</span>
+              <span id="disp-sip-years" class="font-semibold text-emerald-300 tabular-nums">10 yrs</span>
+            </div>
+            <input id="in-sip-years" type="range" min="1" max="30" step="1" value="10" class="w-full cursor-pointer">
+          </div>
+          <label class="flex items-center gap-2.5 text-xs text-slate-300 pt-1 cursor-pointer">
+            <input id="in-sip-inflation" type="checkbox" class="h-4 w-4 rounded accent-emerald-400">
+            <span id="lbl-sip-inf">6% वार्षिक महागाई (Inflation) समायोजित करा</span>
+          </label>
+        </div>
+
+        <div class="glass rounded-3xl p-5 lg:col-span-7">
+          <div class="relative h-72 w-full">
+            <canvas id="sip-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 2: EMI -->
+    <section id="panel-emi" class="panel-anim space-y-5 hidden">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="glass rounded-2xl p-4">
+          <div id="lbl-emi-monthly" class="text-xs text-slate-400">मासिक हप्ता (EMI)</div>
+          <div id="val-emi-monthly" class="text-2xl font-bold text-white mt-1 tabular-nums">₹21,618</div>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div id="lbl-emi-interest" class="text-xs text-slate-400">एकूण व्याज</div>
+          <div id="val-emi-interest" class="text-2xl font-bold text-rose-300 mt-1 tabular-nums">₹11,88,266</div>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div id="lbl-emi-total" class="text-xs text-slate-400">एकूण परतफेड</div>
+          <div id="val-emi-total" class="text-2xl font-bold text-sky-300 mt-1 tabular-nums">₹31,88,266</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="glass rounded-3xl p-5 lg:col-span-5 space-y-4">
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <span id="lbl-emi-amt" class="text-slate-300">कर्जाची रक्कम (₹)</span>
+              <span id="disp-emi-amt" class="font-semibold text-emerald-300 tabular-nums">₹20,00,000</span>
+            </div>
+            <input id="in-emi-amt" type="range" min="100000" max="10000000" step="100000" value="2000000" class="w-full cursor-pointer">
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <span id="lbl-emi-rate" class="text-slate-300">व्याज दर (% p.a.)</span>
+              <span id="disp-emi-rate" class="font-semibold text-emerald-300 tabular-nums">8.5%</span>
+            </div>
+            <input id="in-emi-rate" type="range" min="6" max="16" step="0.25" value="8.5" class="w-full cursor-pointer">
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <span id="lbl-emi-years" class="text-slate-300">कालावधी (वर्षे)</span>
+              <span id="disp-emi-years" class="font-semibold text-emerald-300 tabular-nums">12 yrs</span>
+            </div>
+            <input id="in-emi-years" type="range" min="1" max="30" step="1" value="12" class="w-full cursor-pointer">
+          </div>
+        </div>
+
+        <div class="glass rounded-3xl p-5 lg:col-span-7">
+          <div class="relative h-72 w-full">
+            <canvas id="emi-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 3: Budget -->
+    <section id="panel-budget" class="panel-anim space-y-5 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="glass rounded-3xl p-5 lg:col-span-6">
+          <form id="budget-form" class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 mb-4">
+            <input id="exp-title" type="text" required placeholder="खर्चाचे नाव (उदा. घरभाडे)" class="sm:col-span-5 px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400">
+            <input id="exp-amt" type="number" required min="1" placeholder="रक्कम ₹" class="sm:col-span-3 px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400">
+            <select id="exp-cat" class="sm:col-span-2 px-2 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-emerald-400">
+              <option value="Living">Living</option>
+              <option value="Food">Food</option>
+              <option value="Invest">Invest</option>
+              <option value="Other">Other</option>
+            </select>
+            <button id="btn-add-exp" type="submit" class="sm:col-span-2 btn-spring px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500 text-slate-950 hover:bg-emerald-400">जोडा</button>
+          </form>
+          <ul id="exp-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></ul>
+        </div>
+
+        <div class="glass rounded-3xl p-5 lg:col-span-6">
+          <div class="relative h-72 w-full">
+            <canvas id="budget-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="fixed bottom-5 right-5 z-50 px-4 py-2.5 rounded-xl bg-slate-900/95 border border-emerald-400/40 text-sm text-emerald-200 shadow-xl opacity-0 pointer-events-none transition-all duration-300 translate-y-2"></div>
+
+  <script>
+    const fmtINR = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+    const STORAGE_KEY = 'arthadrishti_v1';
+
+    function loadBudget() {
+      const defaults = [
+        { id: 1, title: 'घरभाडे / EMI', amt: 15000, cat: 'Living' },
+        { id: 2, title: 'किराणा व जेवण', amt: 8500, cat: 'Food' },
+        { id: 3, title: 'SIP गुंतवणूक', amt: 10000, cat: 'Invest' },
+        { id: 4, title: 'वीज, इंटरनेट व इतर', amt: 4500, cat: 'Other' }
+      ];
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : defaults;
+      } catch (e) {
+        return defaults;
+      }
+    }
+
+    let expenses = loadBudget();
+    let lang = 'mr';
+    let activeTab = 'sip';
+    let sipChart = null, emiChart = null, budgetChart = null;
+
+    function saveBudget() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses)); } catch (e) {}
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.remove('opacity-0', 'translate-y-2');
+      el.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        el.classList.add('opacity-0', 'translate-y-2');
+        el.classList.remove('opacity-100', 'translate-y-0');
+      }, 2400);
+    }
+
+    function playTone() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      } catch (e) {}
+    }
+
+    const I18N = {
+      mr: {
+        title: 'अर्थदृष्टी स्टुडिओ',
+        sub: 'SIP गुंतवणूक, कर्ज EMI आणि मासिक बजेट सिम्युलेटर',
+        speak: 'सारांश ऐका',
+        install: 'अ‍ॅप इन्स्टॉल करा',
+        installHelp: 'ब्राउझर मेनू (⋮ किंवा Share) मधून "Add to Home Screen" निवडा.',
+        exportBtn: 'CSV एक्सपोर्ट',
+        tabSip: 'SIP संपत्ती वाढ',
+        tabEmi: 'कर्ज EMI हिशोब',
+        tabBudget: 'मासिक बजेट',
+        sipInv: 'एकूण गुंतवणूक',
+        sipGain: 'अंदाजित नफा',
+        sipTotal: 'अंतिम संपत्ती',
+        sipMonthly: 'मासिक SIP (₹)',
+        sipRate: 'वार्षिक परतावा (%)',
+        sipYears: 'कालावधी (वर्षे)',
+        sipInf: '6% वार्षिक महागाई (Inflation) समायोजित करा',
+        emiMonthly: 'मासिक हप्ता (EMI)',
+        emiInterest: 'एकूण व्याज',
+        emiTotal: 'एकूण परतफेड',
+        emiAmt: 'कर्जाची रक्कम (₹)',
+        emiRate: 'व्याज दर (% p.a.)',
+        emiYears: 'कालावधी (वर्षे)',
+        expPh: 'खर्चाचे नाव (उदा. घरभाडे)',
+        amtPh: 'रक्कम ₹',
+        add: 'जोडा',
+        csvToast: 'आर्थिक अहवाल CSV मध्ये डाउनलोड झाला!',
+        yrs: 'वर्षे'
+      },
+      en: {
+        title: 'ArthaDrishti Studio',
+        sub: 'SIP Wealth, Loan EMI & Monthly Budget Simulator',
+        speak: 'Read Summary',
+        install: 'Install App',
+        installHelp: 'Open browser menu (⋮ or Share) and tap "Add to Home Screen".',
+        exportBtn: 'Export CSV',
+        tabSip: 'SIP Wealth',
+        tabEmi: 'Loan EMI',
+        tabBudget: 'Monthly Budget',
+        sipInv: 'Total Invested',
+        sipGain: 'Est. Returns',
+        sipTotal: 'Final Corpus',
+        sipMonthly: 'Monthly SIP (₹)',
+        sipRate: 'Expected Return (% p.a.)',
+        sipYears: 'Duration (Years)',
+        sipInf: 'Adjust for 6% annual inflation',
+        emiMonthly: 'Monthly EMI',
+        emiInterest: 'Total Interest',
+        emiTotal: 'Total Payable',
+        emiAmt: 'Loan Principal (₹)',
+        emiRate: 'Interest Rate (% p.a.)',
+        emiYears: 'Tenure (Years)',
+        expPh: 'Expense name (e.g., Rent)',
+        amtPh: 'Amount ₹',
+        add: 'Add',
+        csvToast: 'Financial report downloaded as CSV!',
+        yrs: 'yrs'
+      }
+    };
+
+    // --- SIP Logic ---
+    function calcSipSeries() {
+      const P = parseFloat(document.getElementById('in-sip-monthly').value);
+      const annualRate = parseFloat(document.getElementById('in-sip-rate').value);
+      const years = parseInt(document.getElementById('in-sip-years').value, 10);
+      const adjustInf = document.getElementById('in-sip-inflation').checked;
+      const effectiveRate = adjustInf ? Math.max(0.5, annualRate - 6) : annualRate;
+      const r = effectiveRate / 100 / 12;
+
+      const labels = [], invArr = [], valArr = [];
+      for (let y = 1; y <= years; y++) {
+        const n = y * 12;
+        const invested = P * n;
+        const fv = P * ((Math.pow(1 + r, n) - 1) / r) * (1 + r);
+        labels.push(`Y${y}`);
+        invArr.push(Math.round(invested));
+        valArr.push(Math.round(fv));
+      }
+      return { P, annualRate, years, labels, invArr, valArr };
+    }
+
+    function updateSip() {
+      const { P, annualRate, years, labels, invArr, valArr } = calcSipSeries();
+      const totalInv = invArr[invArr.length - 1];
+      const totalVal = valArr[valArr.length - 1];
+      const gain = totalVal - totalInv;
+
+      document.getElementById('disp-sip-monthly').textContent = fmtINR.format(P);
+      document.getElementById('disp-sip-rate').textContent = `${annualRate}%`;
+      document.getElementById('disp-sip-years').textContent = `${years} ${I18N[lang].yrs}`;
+      document.getElementById('val-sip-inv').textContent = fmtINR.format(totalInv);
+      document.getElementById('val-sip-gain').textContent = fmtINR.format(gain);
+      document.getElementById('val-sip-total').textContent = fmtINR.format(totalVal);
+
+      if (typeof Chart === 'undefined') return;
+      const ctx = document.getElementById('sip-chart').getContext('2d');
+      if (sipChart) {
+        sipChart.data.labels = labels;
+        sipChart.data.datasets[0].data = invArr;
+        sipChart.data.datasets[1].data = valArr;
+        sipChart.update();
+        return;
+      }
+      sipChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Invested', data: invArr, borderColor: '#94a3b8', backgroundColor: 'rgba(148,163,184,0.1)', fill: true, tension: 0.3 },
+            { label: 'Total Value', data: valArr, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.18)', fill: true, tension: 0.3 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#cbd5e1' } } },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } }
+          }
+        }
+      });
+    }
+
+    // --- EMI Logic ---
+    function updateEmi() {
+      const P = parseFloat(document.getElementById('in-emi-amt').value);
+      const rate = parseFloat(document.getElementById('in-emi-rate').value);
+      const years = parseInt(document.getElementById('in-emi-years').value, 10);
+      const r = rate / 100 / 12;
+      const n = years * 12;
+      const factor = Math.pow(1 + r, n);
+      const emi = P * (r * factor) / (factor - 1);
+      const total = emi * n;
+      const interest = total - P;
+
+      document.getElementById('disp-emi-amt').textContent = fmtINR.format(P);
+      document.getElementById('disp-emi-rate').textContent = `${rate}%`;
+      document.getElementById('disp-emi-years').textContent = `${years} ${I18N[lang].yrs}`;
+      document.getElementById('val-emi-monthly').textContent = fmtINR.format(emi);
+      document.getElementById('val-emi-interest').textContent = fmtINR.format(interest);
+      document.getElementById('val-emi-total').textContent = fmtINR.format(total);
+
+      if (typeof Chart === 'undefined') return;
+      const ctx = document.getElementById('emi-chart').getContext('2d');
+      if (emiChart) {
+        emiChart.data.datasets[0].data = [Math.round(P), Math.round(interest)];
+        emiChart.update();
+        return;
+      }
+      emiChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Principal', 'Interest'],
+          datasets: [{ data: [Math.round(P), Math.round(interest)], backgroundColor: ['#38bdf8', '#fb7185'], borderWidth: 0 }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1' } } }
+        }
+      });
+    }
+
+    // --- Budget Logic ---
+    function renderBudget() {
+      const list = document.getElementById('exp-list');
+      list.replaceChildren();
+      const catTotals = { Living: 0, Food: 0, Invest: 0, Other: 0 };
+
+      expenses.forEach(item => {
+        catTotals[item.cat] = (catTotals[item.cat] || 0) + item.amt;
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-900/75 border border-slate-800 text-sm';
+
+        const left = document.createElement('div');
+        left.className = 'min-w-0';
+        const t = document.createElement('div');
+        t.className = 'text-slate-100 truncate font-medium';
+        t.textContent = item.title;
+        const c = document.createElement('div');
+        c.className = 'text-xs text-slate-400';
+        c.textContent = item.cat;
+        left.appendChild(t);
+        left.appendChild(c);
+
+        const right = document.createElement('div');
+        right.className = 'flex items-center gap-2 shrink-0';
+        const amt = document.createElement('span');
+        amt.className = 'font-semibold text-emerald-300 tabular-nums';
+        amt.textContent = fmtINR.format(item.amt);
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'btn-spring px-2 py-0.5 rounded-lg text-xs text-slate-400 hover:text-rose-300';
+        del.textContent = '×';
+        del.addEventListener('click', () => {
+          expenses = expenses.filter(x => x.id !== item.id);
+          saveBudget();
+          renderBudget();
+        });
+        right.appendChild(amt);
+        right.appendChild(del);
+
+        li.appendChild(left);
+        li.appendChild(right);
+        list.appendChild(li);
+      });
+
+      if (typeof Chart === 'undefined') return;
+      const ctx = document.getElementById('budget-chart').getContext('2d');
+      const vals = [catTotals.Living, catTotals.Food, catTotals.Invest, catTotals.Other];
+      if (budgetChart) {
+        budgetChart.data.datasets[0].data = vals;
+        budgetChart.update();
+        return;
+      }
+      budgetChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Living', 'Food', 'Invest', 'Other'],
+          datasets: [{
+            label: 'Monthly ₹',
+            data: vals,
+            backgroundColor: ['#38bdf8', '#fbbf24', '#10b981', '#a78bfa'],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } }
+          }
+        }
+      });
+    }
+
+    document.getElementById('budget-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const titleEl = document.getElementById('exp-title');
+      const amtEl = document.getElementById('exp-amt');
+      const catEl = document.getElementById('exp-cat');
+      const title = titleEl.value.trim();
+      const amt = parseFloat(amtEl.value);
+      if (!title || isNaN(amt) || amt <= 0) return;
+      expenses.unshift({ id: Date.now(), title, amt, cat: catEl.value });
+      titleEl.value = '';
+      amtEl.value = '';
+      playTone();
+      saveBudget();
+      renderBudget();
+    });
+
+    // --- Tabs ---
+    function switchTab(tab) {
+      activeTab = tab;
+      ['sip', 'emi', 'budget'].forEach(name => {
+        const panel = document.getElementById(`panel-${name}`);
+        const btn = document.getElementById(`tab-${name}`);
+        if (name === tab) {
+          panel.classList.remove('hidden');
+          btn.className = 'btn-spring px-4 py-2 rounded-xl text-sm font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 whitespace-nowrap';
+        } else {
+          panel.classList.add('hidden');
+          btn.className = 'btn-spring px-4 py-2 rounded-xl text-sm font-medium bg-slate-900/70 text-slate-400 border border-slate-800 hover:text-slate-200 whitespace-nowrap';
+        }
+      });
+      if (tab === 'sip') updateSip();
+      if (tab === 'emi') updateEmi();
+      if (tab === 'budget') renderBudget();
+    }
+
+    document.getElementById('tab-sip').addEventListener('click', () => switchTab('sip'));
+    document.getElementById('tab-emi').addEventListener('click', () => switchTab('emi'));
+    document.getElementById('tab-budget').addEventListener('click', () => switchTab('budget'));
+
+    // --- Language ---
+    function applyLanguage() {
+      const t = I18N[lang];
+      document.getElementById('app-title').textContent = t.title;
+      document.getElementById('app-sub').textContent = t.sub;
+      document.getElementById('btn-speak').textContent = t.speak;
+      document.getElementById('btn-install').textContent = t.install;
+      document.getElementById('btn-export').textContent = t.exportBtn;
+      document.getElementById('tab-sip').textContent = t.tabSip;
+      document.getElementById('tab-emi').textContent = t.tabEmi;
+      document.getElementById('tab-budget').textContent = t.tabBudget;
+      document.getElementById('lbl-sip-inv').textContent = t.sipInv;
+      document.getElementById('lbl-sip-gain').textContent = t.sipGain;
+      document.getElementById('lbl-sip-total').textContent = t.sipTotal;
+      document.getElementById('lbl-sip-monthly').textContent = t.sipMonthly;
+      document.getElementById('lbl-sip-rate').textContent = t.sipRate;
+      document.getElementById('lbl-sip-years').textContent = t.sipYears;
+      document.getElementById('lbl-sip-inf').textContent = t.sipInf;
+      document.getElementById('lbl-emi-monthly').textContent = t.emiMonthly;
+      document.getElementById('lbl-emi-interest').textContent = t.emiInterest;
+      document.getElementById('lbl-emi-total').textContent = t.emiTotal;
+      document.getElementById('lbl-emi-amt').textContent = t.emiAmt;
+      document.getElementById('lbl-emi-rate').textContent = t.emiRate;
+      document.getElementById('lbl-emi-years').textContent = t.emiYears;
+      document.getElementById('exp-title').placeholder = t.expPh;
+      document.getElementById('exp-amt').placeholder = t.amtPh;
+      document.getElementById('btn-add-exp').textContent = t.add;
+
+      const mrBtn = document.getElementById('lang-mr');
+      const enBtn = document.getElementById('lang-en');
+      if (lang === 'mr') {
+        mrBtn.className = 'btn-spring px-3 py-1 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+        enBtn.className = 'btn-spring px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200';
+      } else {
+        enBtn.className = 'btn-spring px-3 py-1 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+        mrBtn.className = 'btn-spring px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200';
+      }
+      updateSip();
+      updateEmi();
+    }
+
+    document.getElementById('lang-mr').addEventListener('click', () => { lang = 'mr'; applyLanguage(); });
+    document.getElementById('lang-en').addEventListener('click', () => { lang = 'en'; applyLanguage(); });
+
+    // --- Export & Speech ---
+    document.getElementById('btn-export').addEventListener('click', () => {
+      const { labels, invArr, valArr } = calcSipSeries();
+      const rows = [['Year', 'Invested_INR', 'Projected_Value_INR']];
+      labels.forEach((lbl, i) => rows.push([lbl, invArr[i], valArr[i]]));
+      const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'arthadrishti_sip_plan.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      playTone();
+      showToast(I18N[lang].csvToast);
+    });
+
+    document.getElementById('btn-speak').addEventListener('click', () => {
+      playTone();
+      try {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const totalSip = document.getElementById('val-sip-total').textContent;
+        const emiVal = document.getElementById('val-emi-monthly').textContent;
+        const msg = lang === 'mr'
+          ? `तुमची अंदाजित एसआयपी संपत्ती ${totalSip} आहे, आणि कर्जाचा मासिक हप्ता ${emiVal} आहे.`
+          : `Your projected SIP corpus is ${totalSip}, and your monthly loan EMI is ${emiVal}.`;
+        const utter = new SpeechSynthesisUtterance(msg);
+        utter.lang = lang === 'mr' ? 'mr-IN' : 'en-IN';
+        window.speechSynthesis.speak(utter);
+      } catch (e) {}
+    });
+
+    // --- Listeners ---
+    ['in-sip-monthly', 'in-sip-rate', 'in-sip-years', 'in-sip-inflation'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateSip);
+    });
+    ['in-emi-amt', 'in-emi-rate', 'in-emi-years'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateEmi);
+    });
+
+    // --- Ambient Canvas ---
+    (function initBg() {
+      const canvas = document.getElementById('bg-canvas');
+      const ctx = canvas.getContext('2d');
+      let w = 0, h = 0;
+      const orbs = Array.from({ length: 30 }, () => ({
+        x: Math.random(),
+        y: Math.random(),
+        r: 1.2 + Math.random() * 2.5,
+        vx: (Math.random() - 0.5) * 0.0003,
+        vy: -0.0002 - Math.random() * 0.00035,
+        a: 0.15 + Math.random() * 0.4
+      }));
+      function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+      window.addEventListener('resize', resize);
+      resize();
+      function loop() {
+        ctx.clearRect(0, 0, w, h);
+        orbs.forEach(o => {
+          o.x += o.vx; o.y += o.vy;
+          if (o.y < -0.05) { o.y = 1.05; o.x = Math.random(); }
+          ctx.beginPath();
+          ctx.arc(o.x * w, o.y * h, o.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(16, 185, 129, ${o.a})`;
+          ctx.fill();
+        });
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+    })();
+
+    // --- PWA Manifest & Home-Screen Install ---
+    (function initPWA() {
+      function makePngIcon(size) {
+        const c = document.createElement('canvas');
+        c.width = size; c.height = size;
+        const g = c.getContext('2d');
+        g.fillStyle = '#090e17';
+        g.beginPath();
+        g.roundRect(0, 0, size, size, size * 0.22);
+        g.fill();
+        g.strokeStyle = '#10b981';
+        g.lineWidth = size * 0.065;
+        g.beginPath();
+        g.arc(size / 2, size / 2, size * 0.33, 0, Math.PI * 2);
+        g.stroke();
+        g.fillStyle = '#10b981';
+        g.font = `700 ${Math.round(size * 0.42)}px sans-serif`;
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.fillText('₹', size / 2, size * 0.53);
+        return c.toDataURL('image/png');
+      }
+      try {
+        const icon192 = makePngIcon(192);
+        const icon512 = makePngIcon(512);
+        document.getElementById('pwa-apple-icon').setAttribute('href', icon192);
+        const manifestObj = {
+          name: 'अर्थदृष्टी स्टुडिओ — Wealth & Budget',
+          short_name: 'अर्थदृष्टी',
+          start_url: '.',
+          display: 'standalone',
+          background_color: '#090e17',
+          theme_color: '#090e17',
+          icons: [
+            { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+            { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+          ]
+        };
+        const blob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+        document.getElementById('pwa-manifest').setAttribute('href', URL.createObjectURL(blob));
+      } catch (e) {}
+
+      let deferredPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+      });
+
+      document.getElementById('btn-install').addEventListener('click', async () => {
+        playTone();
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          try { await deferredPrompt.userChoice; } catch (e) {}
+          deferredPrompt = null;
+        } else {
+          showToast(I18N[lang].installHelp);
+        }
+      });
+    })();
+
+    applyLanguage();
+    renderBudget();
+  </script>
+</body>
+</html>
